@@ -18,14 +18,19 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+<<<<<<< HEAD
+=======
+app.use('/api/projects', require('./routes/projectRoutes'));
+>>>>>>> ca6a3ec (develop: project management middleware and routes setup)
 
 // Basic route
 app.get('/', (req, res) => {
   res.json({ message: '🐛 Bug Tracker API is running...' });
 });
 
-// Error handler
+// Error handler - UPDATED
 app.use((err, req, res, next) => {
+  console.error('Error:', err);
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode);
   res.json({
