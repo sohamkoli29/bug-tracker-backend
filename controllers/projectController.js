@@ -47,7 +47,6 @@ const getProject = async (req, res) => {
   }
 };
 
-// @desc    Create new project
 const createProject = async (req, res) => {
   try {
     const { title, description, key, color, icon } = req.body;
@@ -63,8 +62,8 @@ const createProject = async (req, res) => {
       return res.status(400).json({ message: 'Project key already exists' });
     }
 
-    // Create project with owner in team members
-    const project = await Project.create({
+    // Create project WITHOUT pre-save hook
+    const project = new Project({
       title,
       description,
       key: key.toUpperCase(),
@@ -76,8 +75,10 @@ const createProject = async (req, res) => {
           user: req.user._id,
           role: 'admin',
         },
-      ],
+      ], // Manually add owner to team members
     });
+
+    await project.save();
 
     const populatedProject = await Project.findById(project._id)
       .populate('owner', 'name email')
