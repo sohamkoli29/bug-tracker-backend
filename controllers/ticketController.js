@@ -1,6 +1,6 @@
-const Ticket = require('../models/Ticket');
-const Project = require('../models/Project');
-
+const Ticket = require("../models/Ticket");
+const Project = require("../models/Project");
+const Activity = require("../models/Activity");
 // @desc    Get all tickets for a project
 // @route   GET /api/projects/:projectId/tickets
 // @access  Private
@@ -11,22 +11,24 @@ const getTickets = async (req, res) => {
     // Check if user is a member of the project
     const project = await Project.findById(projectId);
     if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
+      return res.status(404).json({ message: "Project not found" });
     }
 
     const isMember = project.teamMembers.some(
-      (member) => member.user.toString() === req.user._id.toString()
+      (member) => member.user.toString() === req.user._id.toString(),
     );
 
     if (!isMember) {
-      return res.status(403).json({ message: 'Not authorized to access this project' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to access this project" });
     }
 
     // Get tickets
     const tickets = await Ticket.find({ project: projectId })
-      .populate('assignee', 'name email')
-      .populate('reporter', 'name email')
-      .sort('-createdAt');
+      .populate("assignee", "name email")
+      .populate("reporter", "name email")
+      .sort("-createdAt");
 
     res.json(tickets);
   } catch (error) {
@@ -40,22 +42,24 @@ const getTickets = async (req, res) => {
 const getTicket = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
-      .populate('assignee', 'name email')
-      .populate('reporter', 'name email')
-      .populate('project', 'title key color icon');
+      .populate("assignee", "name email")
+      .populate("reporter", "name email")
+      .populate("project", "title key color icon");
 
     if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
+      return res.status(404).json({ message: "Ticket not found" });
     }
 
     // Check if user is a member of the project
     const project = await Project.findById(ticket.project._id);
     const isMember = project.teamMembers.some(
-      (member) => member.user.toString() === req.user._id.toString()
+      (member) => member.user.toString() === req.user._id.toString(),
     );
 
     if (!isMember) {
-      return res.status(403).json({ message: 'Not authorized to access this ticket' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to access this ticket" });
     }
 
     res.json(ticket);
@@ -70,31 +74,36 @@ const getTicket = async (req, res) => {
 const createTicket = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { title, description, type, priority, assignee, dueDate, tags } = req.body;
+    const { title, description, type, priority, assignee, dueDate, tags } =
+      req.body;
 
     // Validation
     if (!title || !description) {
-      return res.status(400).json({ message: 'Please provide title and description' });
+      return res
+        .status(400)
+        .json({ message: "Please provide title and description" });
     }
 
     // Check if user is a member of the project
     const project = await Project.findById(projectId);
     if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
+      return res.status(404).json({ message: "Project not found" });
     }
 
     const isMember = project.teamMembers.some(
-      (member) => member.user.toString() === req.user._id.toString()
+      (member) => member.user.toString() === req.user._id.toString(),
     );
 
     if (!isMember) {
-      return res.status(403).json({ message: 'Not authorized to create tickets in this project' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to create tickets in this project" });
     }
 
     // Get the next ticket number for this project
     const lastTicket = await Ticket.findOne({ project: projectId })
-      .sort('-ticketNumber')
-      .select('ticketNumber');
+      .sort("-ticketNumber")
+      .select("ticketNumber");
 
     const ticketNumber = lastTicket ? lastTicket.ticketNumber + 1 : 1;
 
@@ -105,9 +114,9 @@ const createTicket = async (req, res) => {
       project: projectId,
       ticketNumber,
       ticketKey: `${project.key}-${ticketNumber}`,
-      type: type || 'bug',
-      priority: priority || 'medium',
-      status: 'todo',
+      type: type || "bug",
+      priority: priority || "medium",
+      status: "todo",
       assignee: assignee || null,
       reporter: req.user._id,
       dueDate: dueDate || null,
@@ -115,13 +124,21 @@ const createTicket = async (req, res) => {
     });
 
     const populatedTicket = await Ticket.findById(ticket._id)
-      .populate('assignee', 'name email')
-      .populate('reporter', 'name email')
-      .populate('project', 'title key color icon');
+      .populate("assignee", "name email")
+      .populate("reporter", "name email")
+      .populate("project", "title key color icon");
 
     res.status(201).json(populatedTicket);
+
+    // After creating ticket, add this:
+    await Activity.create({
+      ticket: ticket._id,
+      user: req.user._id,
+      action: "created",
+      description: `Created ticket ${ticket.ticketKey}`,
+    });
   } catch (error) {
-    console.error('Create ticket error:', error);
+    console.error("Create ticket error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -134,20 +151,31 @@ const updateTicket = async (req, res) => {
     const ticket = await Ticket.findById(req.params.id);
 
     if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
+      return res.status(404).json({ message: "Ticket not found" });
     }
 
     // Check if user is a member of the project
     const project = await Project.findById(ticket.project);
     const isMember = project.teamMembers.some(
-      (member) => member.user.toString() === req.user._id.toString()
+      (member) => member.user.toString() === req.user._id.toString(),
     );
 
     if (!isMember) {
-      return res.status(403).json({ message: 'Not authorized to update this ticket' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this ticket" });
     }
 
-    const { title, description, type, priority, status, assignee, dueDate, tags } = req.body;
+    const {
+      title,
+      description,
+      type,
+      priority,
+      status,
+      assignee,
+      dueDate,
+      tags,
+    } = req.body;
 
     if (title) ticket.title = title;
     if (description) ticket.description = description;
@@ -158,12 +186,48 @@ const updateTicket = async (req, res) => {
     if (dueDate !== undefined) ticket.dueDate = dueDate;
     if (tags) ticket.tags = tags;
 
-    await ticket.save();
+    const changes = [];
 
+    if (title && title !== ticket.title) {
+      changes.push({
+        field: "title",
+        oldValue: ticket.title,
+        newValue: title,
+      });
+    }
+
+    if (status && status !== ticket.status) {
+      changes.push({
+        field: "status",
+        oldValue: ticket.status,
+        newValue: status,
+      });
+    }
+
+    if (priority && priority !== ticket.priority) {
+      changes.push({
+        field: "priority",
+        oldValue: ticket.priority,
+        newValue: priority,
+      });
+    }
+
+    await ticket.save();
+    for (const change of changes) {
+      await Activity.create({
+        ticket: ticket._id,
+        user: req.user._id,
+        action: change.field === "status" ? "status_changed" : "updated",
+        field: change.field,
+        oldValue: change.oldValue,
+        newValue: change.newValue,
+        description: `Changed ${change.field} from "${change.oldValue}" to "${change.newValue}"`,
+      });
+    }
     const updatedTicket = await Ticket.findById(ticket._id)
-      .populate('assignee', 'name email')
-      .populate('reporter', 'name email')
-      .populate('project', 'title key color icon');
+      .populate("assignee", "name email")
+      .populate("reporter", "name email")
+      .populate("project", "title key color icon");
 
     res.json(updatedTicket);
   } catch (error) {
@@ -179,25 +243,30 @@ const deleteTicket = async (req, res) => {
     const ticket = await Ticket.findById(req.params.id);
 
     if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
+      return res.status(404).json({ message: "Ticket not found" });
     }
 
     // Check if user is reporter or project admin
     const project = await Project.findById(ticket.project);
     const userMember = project.teamMembers.find(
-      (member) => member.user.toString() === req.user._id.toString()
+      (member) => member.user.toString() === req.user._id.toString(),
     );
 
     const isReporter = ticket.reporter.toString() === req.user._id.toString();
-    const isAdmin = userMember && (userMember.role === 'admin' || project.owner.toString() === req.user._id.toString());
+    const isAdmin =
+      userMember &&
+      (userMember.role === "admin" ||
+        project.owner.toString() === req.user._id.toString());
 
     if (!isReporter && !isAdmin) {
-      return res.status(403).json({ message: 'Not authorized to delete this ticket' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this ticket" });
     }
 
     await ticket.deleteOne();
 
-    res.json({ message: 'Ticket deleted successfully' });
+    res.json({ message: "Ticket deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -213,15 +282,17 @@ const getTicketStats = async (req, res) => {
     // Check if user is a member of the project
     const project = await Project.findById(projectId);
     if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
+      return res.status(404).json({ message: "Project not found" });
     }
 
     const isMember = project.teamMembers.some(
-      (member) => member.user.toString() === req.user._id.toString()
+      (member) => member.user.toString() === req.user._id.toString(),
     );
 
     if (!isMember) {
-      return res.status(403).json({ message: 'Not authorized to access this project' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to access this project" });
     }
 
     const stats = await Ticket.aggregate([
@@ -231,7 +302,7 @@ const getTicketStats = async (req, res) => {
           byStatus: [
             {
               $group: {
-                _id: '$status',
+                _id: "$status",
                 count: { $sum: 1 },
               },
             },
@@ -239,7 +310,7 @@ const getTicketStats = async (req, res) => {
           byPriority: [
             {
               $group: {
-                _id: '$priority',
+                _id: "$priority",
                 count: { $sum: 1 },
               },
             },
@@ -247,14 +318,14 @@ const getTicketStats = async (req, res) => {
           byType: [
             {
               $group: {
-                _id: '$type',
+                _id: "$type",
                 count: { $sum: 1 },
               },
             },
           ],
           total: [
             {
-              $count: 'count',
+              $count: "count",
             },
           ],
         },

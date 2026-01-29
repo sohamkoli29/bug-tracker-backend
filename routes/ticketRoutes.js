@@ -8,6 +8,7 @@ const {
   deleteTicket,
   getTicketStats,
 } = require('../controllers/ticketController');
+const { getTicketActivity, createActivity } = require('../controllers/activityController');
 const { protect } = require('../middleware/auth');
 
 // All routes are protected
@@ -20,5 +21,8 @@ router.route('/projects/:projectId/tickets/stats').get(getTicketStats);
 
 // Individual ticket routes
 router.route('/tickets/:id').get(getTicket).put(updateTicket).delete(deleteTicket);
+
+// Activity routes
+router.route('/tickets/:ticketId/activity').get(getTicketActivity).post(createActivity);
 
 module.exports = router;
