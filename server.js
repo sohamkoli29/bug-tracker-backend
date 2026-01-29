@@ -19,7 +19,8 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
-app.use('/api', require('./routes/ticketRoutes')); // 👈 Add this
+app.use('/api', require('./routes/ticketRoutes'));
+app.use('/api', require('./routes/commentRoutes')); // 👈 Add this
 
 // Basic route
 app.get('/', (req, res) => {
