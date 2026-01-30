@@ -1,6 +1,7 @@
 const Ticket = require("../models/Ticket");
 const Project = require("../models/Project");
 const Activity = require("../models/Activity");
+const { notifyTicketAssigned } = require('../utils/notificationHelper');
 // @desc    Get all tickets for a project
 // @route   GET /api/projects/:projectId/tickets
 // @access  Private
@@ -137,6 +138,10 @@ const createTicket = async (req, res) => {
       action: "created",
       description: `Created ticket ${ticket.ticketKey}`,
     });
+
+    if (ticket.assignee) {
+  await notifyTicketAssigned(ticket, ticket.assignee, req.user._id);
+}
   } catch (error) {
     console.error("Create ticket error:", error);
     res.status(500).json({ message: error.message });
@@ -230,6 +235,11 @@ const updateTicket = async (req, res) => {
       .populate("project", "title key color icon");
 
     res.json(updatedTicket);
+
+    // In updateTicket function:
+if (assignee && assignee !== ticket.assignee?.toString()) {
+  await notifyTicketAssigned(ticket, assignee, req.user._id);
+}
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

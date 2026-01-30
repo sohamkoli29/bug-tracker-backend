@@ -1,6 +1,6 @@
 const Project = require('../models/Project');
 const User = require('../models/User');
-
+const { notifyProjectAdded } = require('../utils/notificationHelper');
 // @desc    Get all projects for logged-in user
 // @route   GET /api/projects
 // @access  Private
@@ -206,6 +206,8 @@ const addTeamMember = async (req, res) => {
       .populate('teamMembers.user', 'name email');
 
     res.json(updatedProject);
+
+    await notifyProjectAdded(project, newUser._id, req.user._id);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

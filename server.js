@@ -20,7 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
 app.use('/api', require('./routes/ticketRoutes'));
-app.use('/api', require('./routes/commentRoutes')); // 👈 Add this
+app.use('/api', require('./routes/commentRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // Basic route
 app.get('/', (req, res) => {

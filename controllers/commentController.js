@@ -1,7 +1,7 @@
 const Comment = require('../models/Comment');
 const Ticket = require('../models/Ticket');
 const Project = require('../models/Project');
-
+const { notifyTicketCommented } = require('../utils/notificationHelper');
 // @desc    Get all comments for a ticket
 // @route   GET /api/tickets/:ticketId/comments
 // @access  Private
@@ -54,6 +54,7 @@ const createComment = async (req, res) => {
 
     // Check if ticket exists and user has access
     const ticket = await Ticket.findById(ticketId);
+    
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
@@ -83,6 +84,14 @@ const createComment = async (req, res) => {
       });
 
     res.status(201).json(populatedComment);
+     
+await notifyTicketCommented(
+  ticket,
+  comment.text,
+  req.user._id,
+  project.teamMembers
+);
+    
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
