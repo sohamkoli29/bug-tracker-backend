@@ -6,7 +6,7 @@ const {
   markAllAsRead,
   deleteNotification,
   clearReadNotifications,
-} = require('../controllers/notificationcontroller');
+} = require('../controllers/notificationController');
 const { protect } = require('../middleware/auth');
 
 // All routes are protected
